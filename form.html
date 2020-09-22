@@ -22,23 +22,23 @@
     <div id="app">
       <v-app>
         <v-main>
-          <v-container>
-            <v-tabs
-              value="tab"
-              background-color="transparent accent-4"
-              :color="state"
-              fixed-tabs
-              @change="onTabChange"
-            >
-              <v-tab>
-                <v-icon class="mr-2">mdi-arrow-down</v-icon>
-                Entrada
-              </v-tab>
-              <v-tab>
-                <v-icon class="mr-2">mdi-arrow-up</v-icon>
-                Saída
-              </v-tab>
-              <v-tab-item class="pt-8">
+          <v-tabs
+            value="tab"
+            :background-color="state"
+            :color="state"
+            fixed-tabs
+            @change="onTabChange"
+          >
+            <v-tab>
+              <v-icon class="mr-2">mdi-arrow-down</v-icon>
+              Entrada
+            </v-tab>
+            <v-tab>
+              <v-icon class="mr-2">mdi-arrow-up</v-icon>
+              Saída
+            </v-tab>
+            <v-tab-item class="pt-8">
+              <v-container>
                 <v-form ref="incomeForm">
                   <v-text-field
                     color="success"
@@ -57,6 +57,7 @@
                     label="Descrição / Item"
                     :items="descriptions"
                     :rules="notEmpty"
+                    :loading="isDescriptionLoading"
                     outlined
                     required
                   >
@@ -97,11 +98,13 @@
                     Salvar Entrada
                   </v-btn>
                 </v-form>
-              </v-tab-item>
+              </v-container>
+            </v-tab-item>
 
-              <!-- OUT -->
+            <!-- OUT -->
 
-              <v-tab-item class="pt-8">
+            <v-tab-item class="pt-8">
+              <v-container>
                 <v-form ref="outcomeForm">
                   <v-text-field
                     color="secondary"
@@ -153,12 +156,12 @@
                     block
                     x-large
                   >
-                    Salvar Entrada
+                    Salvar Saída
                   </v-btn>
                 </v-form>
-              </v-tab-item>
-            </v-tabs>
-          </v-container>
+              </v-container>
+            </v-tab-item>
+          </v-tabs>
         </v-main>
       </v-app>
     </div>
@@ -179,7 +182,7 @@
           },
         }),
         created() {
-          this.getDescriptionItems()
+          //this.getDescriptionItems()
         },
         data: () => ({
           value: '0,00',
@@ -188,6 +191,7 @@
           inDescription: '',
           outDescription: '',
           isLoading: false,
+          isDescriptionLoading: true,
           descriptions: [],
           paymentMethods: [
             {
@@ -222,7 +226,11 @@
           getDescriptionItems() {
             function onItemsReceived(items) {
               this.descriptions = items.map((item) => item.join(' - '))
+
+              this.isDescriptionLoading = false
             }
+
+            this.isDescriptionLoading = true
 
             google.script.run
               .withSuccessHandler(onItemsReceived.bind(this))
@@ -273,11 +281,13 @@
 
             this.isLoading = true
 
+            const date = Intl.DateTimeFormat('pt-BR').format(new Date())
+            const value = this.currencyToFloat(this.value)
+            const description = this.inDescription
+            const paymentMethod = this.paymentMethod
+
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              date: Intl.DateTimeFormat('pt-BR').format(new Date()),
-              value: this.currencyToFloat(this.value),
-              paymentMethod: this.paymentMethod,
-              description: this.inDescription,
+              values: [date, value, description, paymentMethod],
               sheet: 'Entradas',
             })
           },
@@ -290,11 +300,13 @@
 
             this.isLoading = true
 
+            const date = Intl.DateTimeFormat('pt-BR').format(new Date())
+            const value = this.currencyToFloat(this.value)
+            const description = this.outDescription
+            const paymentMethod = this.paymentMethod
+
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              date: Intl.DateTimeFormat('pt-BR').format(new Date()),
-              value: this.currencyToFloat(this.value),
-              paymentMethod: this.paymentMethod,
-              description: this.inDescription,
+              values: [date, value, description, paymentMethod],
               sheet: 'Saidas',
             })
           },
@@ -303,6 +315,7 @@
             this.value = '0,00'
             this.paymentMethod = ''
             this.inDescription = ''
+            this.outDescription = ''
             this.resetValidation()
           },
           resetValidation() {
