@@ -304,6 +304,7 @@
           onAddRowSuccess() {
             this.isLoading = false
             this.resetFields()
+						this.getDescriptionItems()
           },
           saveIncome() {
             const isValid = this.$refs.incomeForm.validate()
@@ -348,13 +349,10 @@
 					savePart() {
 						if (!this.isNewItem) return
 
-						const part = [this.inDescription, this.brand, this.vehicle]
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: part,
+              values: [this.inDescription, this.brand, this.vehicle],
               sheet: 'Itens',
             })
-						
-						this.descriptions.push(part.join(' - '))
           },
           resetFields() {
             this.isLoading = false
