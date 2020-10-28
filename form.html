@@ -286,10 +286,9 @@
             const description = this.inDescription
             const paymentMethod = this.paymentMethod
 
-            google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: [date, value, description, paymentMethod],
-              sheet: 'Entradas',
-            })
+            google.script.run
+              .withSuccessHandler(this.onAddRowSuccess)
+              .addRow([date, 'Entrada', value, description, paymentMethod])
           },
           saveOutgoing() {
             const isValid = this.$refs.outcomeForm.validate()
@@ -305,10 +304,9 @@
             const description = this.outDescription
             const paymentMethod = this.paymentMethod
 
-            google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: [date, value, description, paymentMethod],
-              sheet: 'Saidas',
-            })
+            google.script.run
+              .withSuccessHandler(this.onAddRowSuccess)
+              .addRow([date, 'Saida', value, description, paymentMethod])
           },
           resetFields() {
             this.isLoading = false
