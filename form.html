@@ -64,7 +64,36 @@
                     <template v-slot:selection="data">
                       <span>{{data.item}}</span>
                     </template>
-                  </v-combobox>
+									</v-combobox>
+
+									<v-checkbox
+										v-model="isNewItem"
+										label="Item novo"
+										color="success"
+									></v-checkbox>
+									
+									<container v-if="isNewItem">
+										<v-text-field
+											v-model="brand"
+											label="Marca"
+											:rules="[(v) => !!v || 'Insira o nome da marca']"
+											append-icon="mdi-text"
+											color="success"
+											outlined
+											required
+										>
+										</v-text-field>
+										<v-text-field
+											v-model="vehicle"
+											label="Veículo"
+											:rules="[(v) => !!v || 'Insira o nome do veículo']"
+											append-icon="mdi-car-sports"
+											color="success"
+											outlined
+											required
+										>
+										</v-text-field>
+									</container>
 
                   <v-select
                     color="success"
@@ -193,6 +222,10 @@
           isLoading: false,
           isDescriptionLoading: true,
           descriptions: [],
+					// parts
+					isNewItem: false,
+          brand: '',
+          vehicle: '',
           paymentMethods: [
             {
               icon: 'mdi-currency-usd',
@@ -283,12 +316,15 @@
 
             const date = Intl.DateTimeFormat('pt-BR').format(new Date())
             const value = this.currencyToFloat(this.value)
-            const description = this.inDescription
+            const description = this.isNewItem ? `${this.inDescription} - ${this.brand} - ${this.vehicle}` : this.inDescription
             const paymentMethod = this.paymentMethod
 
-            google.script.run
-              .withSuccessHandler(this.onAddRowSuccess)
-              .addRow([date, 'Entrada', value, description, paymentMethod])
+            google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
+              values: [date, 'Entrada', value, description, paymentMethod],
+              sheet: 'Entrada/Saida',
+            })
+
+						this.savePart()
           },
           saveOutgoing() {
             const isValid = this.$refs.outcomeForm.validate()
@@ -304,9 +340,21 @@
             const description = this.outDescription
             const paymentMethod = this.paymentMethod
 
-            google.script.run
-              .withSuccessHandler(this.onAddRowSuccess)
-              .addRow([date, 'Saida', value, description, paymentMethod])
+            google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
+              values: [date, 'Saida', value, description, paymentMethod],
+              sheet: 'Entrada/Saida',
+            })
+          },
+					savePart() {
+						if (!this.isNewItem) return
+
+						const part = [this.inDescription, this.brand, this.vehicle]
+            google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
+              values: part,
+              sheet: 'Itens',
+            })
+						
+						this.descriptions.push(part.join(' - '))
           },
           resetFields() {
             this.isLoading = false
@@ -314,6 +362,9 @@
             this.paymentMethod = ''
             this.inDescription = ''
             this.outDescription = ''
+						this.isNewItem = false
+						this.brand = ''
+						this.vehicle = ''
             this.resetValidation()
           },
           resetValidation() {
