@@ -116,6 +116,17 @@
                     </template>
                   </v-select>
 
+                  <v-text-field
+										v-model="employee"
+										label="Vendedor"
+										:rules="[(v) => !!v || 'Insira o nome do vendedor']"
+										append-icon="mdi-account"
+										color="success"
+										outlined
+										required
+									>
+									</v-text-field>
+
                   <v-btn
                     color="success"
                     class="mr-4 mt-4"
@@ -177,6 +188,17 @@
                     </template>
                   </v-select>
 
+                  <v-text-field
+										v-model="employee"
+										label="Vendedor"
+										:rules="[(v) => !!v || 'Insira o nome do vendedor']"
+										append-icon="mdi-account"
+										color="success"
+										outlined
+										required
+									>
+									</v-text-field>
+
                   <v-btn
                     color="secondary"
                     class="mr-4 mt-4"
@@ -226,6 +248,7 @@
 					isNewItem: false,
           brand: '',
           vehicle: '',
+          employee: '',
           paymentMethods: [
             {
               icon: 'mdi-currency-usd',
@@ -319,9 +342,10 @@
             const value = this.currencyToFloat(this.value)
             const description = this.isNewItem ? `${this.inDescription} - ${this.brand} - ${this.vehicle}` : this.inDescription
             const paymentMethod = this.paymentMethod
+            const employee = this.employee
 
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: [date, 'Entrada', value, description, paymentMethod],
+              values: [date, 'Entrada', value, description, paymentMethod, employee],
               sheet: 'Entrada/Saida',
             })
 
@@ -340,9 +364,10 @@
             const value = this.currencyToFloat(this.value)
             const description = this.outDescription
             const paymentMethod = this.paymentMethod
+            const employee = this.employee
 
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: [date, 'Saida', value, description, paymentMethod],
+              values: [date, 'Saida', value, description, paymentMethod, employee],
               sheet: 'Entrada/Saida',
             })
           },
@@ -363,6 +388,7 @@
 						this.isNewItem = false
 						this.brand = ''
 						this.vehicle = ''
+            this.employee = ''
             this.resetValidation()
           },
           resetValidation() {
