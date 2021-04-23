@@ -13,6 +13,10 @@
       href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css"
       rel="stylesheet"
     />
+    <link 
+      href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" 
+      rel="stylesheet"
+    />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
@@ -40,17 +44,35 @@
             <v-tab-item class="pt-8">
               <v-container>
                 <v-form ref="incomeForm">
-                  <v-text-field
-                    color="success"
-                    v-model="value"
-                    label="Valor"
-                    :rules="valueRules"
-                    @change="onValueChange"
-                    append-icon="mdi-currency-usd"
-                    outlined
-                    required
-                  >
-                  </v-text-field>
+                  <div class="flex gap-3">
+                    <v-text-field
+                      color="success"
+                      v-model="value"
+                      label="Valor"
+                      :rules="valueRules"
+                      @change="onValueChange"
+                      append-icon="mdi-currency-usd"
+                      outlined
+                      required
+                    >
+                    </v-text-field>
+                    <div class="w-32">
+                      <v-text-field
+                        color="success"
+                        v-model="amount"
+                        label="Qtd."
+                        append-icon="mdi-pound"
+                        outlined
+                        required
+                        :rules="[
+                          v => !!v || 'Insira a quantidade',
+                          v => v > 0 || 'Quantidade inválida',
+                          v => !isNaN(v) || 'Quantidade inválida',
+                        ]"
+                      >
+                      </v-text-field>
+                    </div>
+                  </div>
                   <v-combobox
                     color="success"
                     v-model="inDescription"
@@ -141,7 +163,10 @@
                     block
                     x-large
                   >
-                    Salvar Entrada
+                    Salvar 
+                    <span class="ml-1" v-if="currencyToFloat(value) > 0">
+                      - R$ {{toCurrency(amount * currencyToFloat(value))}}
+                    </span>
                   </v-btn>
                 </v-form>
               </v-container>
@@ -219,7 +244,7 @@
                     block
                     x-large
                   >
-                    Salvar Saída
+                    Salvar
                   </v-btn>
                 </v-form>
               </v-container>
@@ -245,53 +270,60 @@
           },
         }),
         created() {
-          //this.getDescriptionItems()
+          // this.getDescriptionItems()
+          setTimeout(this.initValues.bind(this), 0)
         },
-        data: () => ({
-          value: '0,00',
-          valueAux: '0,00',
-          paymentMethod: '',
-          inDescription: '',
-          outDescription: '',
-          isLoading: false,
-          isDescriptionLoading: true,
-          descriptions: [],
-					// parts
-					isNewItem: false,
-          brand: '',
-          vehicle: '',
-          employee: '',
-          hasToBePrinted: false,
-          paymentMethods: [
-            {
-              icon: 'mdi-currency-usd',
-              text: 'Dinheiro',
-            },
-            {
-              icon: 'mdi-credit-card-outline',
-              text: 'Cartão',
-            },
-            {
-              icon: 'mdi-swap-horizontal',
-              text: 'Transferência',
-            },
-          ],
-          state: 'success',
-          darkTheme: false,
-          notEmpty: [(v) => !!v || 'Dê uma descrição para a transação'],
-          valueRules: [
-            (v) => {
-              const str = v.toString()
-              const value = str
-                .replace(/./g, (c) => (c == '.' ? '' : c))
-                .replace(',', '.')
+        data() {
+          return {
+            value: '0,00',
+            valueAux: '0,00',
+            amount: 1,
+            paymentMethod: '',
+            inDescription: '',
+            outDescription: '',
+            isLoading: false,
+            isDescriptionLoading: true,
+            descriptions: [],
+            // parts
+            isNewItem: false,
+            brand: '',
+            vehicle: '',
+            employee: '',
+            hasToBePrinted: false,
+            paymentMethods: [
+              {
+                icon: 'mdi-currency-usd',
+                text: 'Dinheiro',
+              },
+              {
+                icon: 'mdi-credit-card-outline',
+                text: 'Cartão',
+              },
+              {
+                icon: 'mdi-swap-horizontal',
+                text: 'Transferência',
+              },
+            ],
+            state: 'success',
+            darkTheme: false,
+            notEmpty: [(v) => !!v || 'Dê uma descrição para a transação'],
+            valueRules: [
+              (v) => {
+                const str = v.toString()
+                const value = str
+                  .replace(/./g, (c) => (c == '.' ? '' : c))
+                  .replace(',', '.')
 
-              return !isNaN(value) || 'Insira um valor válido'
-            },
-            (v) => v !== '0,00' || 'Valor não pode ser 0,00',
-          ],
-        }),
+                return !isNaN(value) || 'Insira um valor válido'
+              },
+              (v) => v !== '0,00' || 'Valor não pode ser 0,00',
+            ],
+          }
+        },
         methods: {
+          initValues() {
+            this.hasToBePrinted = true
+          },
           getDescriptionItems() {
             function onItemsReceived(items) {
               this.descriptions = items.map((item) => item.join(' - '))
@@ -306,6 +338,8 @@
               .getItens()
           },
           currencyToFloat(value) {
+            if (typeof value === 'number') return value
+            
             return value
               .toString()
               .replace(/./g, (v) => (v == '.' ? '' : v))
@@ -353,13 +387,14 @@
             this.isLoading = true
 
             const date = Intl.DateTimeFormat('pt-BR').format(new Date())
-            const value = this.currencyToFloat(this.value)
+            const value = this.amount * this.currencyToFloat(this.value)
             const description = this.isNewItem ? `${this.inDescription} - ${this.brand} - ${this.vehicle}` : this.inDescription
             const paymentMethod = this.paymentMethod
             const employee = this.employee
+            const amount = this.amount
 
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: [date, 'Entrada', value, description, paymentMethod, employee],
+              values: [date, 'Entrada', value, description, paymentMethod, employee, amount],
               sheet: 'Entrada/Saida',
             })
 
@@ -380,9 +415,10 @@
             const description = this.outDescription
             const paymentMethod = this.paymentMethod
             const employee = this.employee
+            const amount = this.amount
 
             google.script.run.withSuccessHandler(this.onAddRowSuccess).addRow({
-              values: [date, 'Saida', value, description, paymentMethod, employee],
+              values: [date, 'Saida', value, description, paymentMethod, employee, amount],
               sheet: 'Entrada/Saida',
             })
 
@@ -399,6 +435,7 @@
           resetFields() {
             this.isLoading = false
             this.value = '0,00'
+            this.amount = 1
             this.paymentMethod = ''
             this.inDescription = ''
             this.outDescription = ''
@@ -406,7 +443,7 @@
 						this.brand = ''
 						this.vehicle = ''
             this.employee = ''
-            this.hasToBePrinted = false
+            this.hasToBePrinted = true
             this.resetValidation()
           },
           resetValidation() {
@@ -425,10 +462,11 @@
             const value = this.currencyToFloat(this.value)
             const paymentMethod = this.paymentMethod
             const employee = this.employee
+            const amount = this.amount
             
             google.script.run.addToPrint({
               values: {
-                description, value, employee
+                description, value, employee, amount
               },
               sheet: 'IMPRESSAO',
             })

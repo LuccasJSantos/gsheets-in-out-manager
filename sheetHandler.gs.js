@@ -23,6 +23,8 @@ function addToPrint(data) {
   const firstRow = printRange.getRow()
   const lastRow = printRange.getLastRow()
 
+  const { amount, description, value, employee } = data.values
+
   // set row
   for (let i = 1; i <= lastRow - firstRow + 1; i++) {
     const amountCell = printRange.getCell(i, 1)
@@ -30,9 +32,9 @@ function addToPrint(data) {
     const valueCell = printRange.getCell(i, 3)
     if (descriptionCell.getValue() !== '') continue
     
-    amountCell.setValue(1)
-    descriptionCell.setValue(data.values.description)
-    valueCell.setValue(data.values.value)
+    amountCell.setValue(amount)
+    descriptionCell.setValue(description)
+    valueCell.setValue(value)
 
     break
   }
@@ -40,5 +42,5 @@ function addToPrint(data) {
   // set employee
   employeeRange
     .getCell(1, 1)
-    .setValue(data.values.employee)
+    .setValue(employee)
 }
