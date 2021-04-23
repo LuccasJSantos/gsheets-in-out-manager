@@ -127,6 +127,12 @@
 									>
 									</v-text-field>
 
+                  <v-checkbox
+										v-model="hasToBePrinted"
+										label="Marcar para impressão"
+										color="success"
+									></v-checkbox>
+
                   <v-btn
                     color="success"
                     class="mr-4 mt-4"
@@ -199,6 +205,12 @@
 									>
 									</v-text-field>
 
+                  <v-checkbox
+										v-model="hasToBePrinted"
+										label="Marcar para impressão"
+										color="success"
+									></v-checkbox>
+
                   <v-btn
                     color="secondary"
                     class="mr-4 mt-4"
@@ -249,6 +261,7 @@
           brand: '',
           vehicle: '',
           employee: '',
+          hasToBePrinted: false,
           paymentMethods: [
             {
               icon: 'mdi-currency-usd',
@@ -321,6 +334,7 @@
             })
           },
           onTabChange(i) {
+            this.resetFields()
             this.resetValidation()
             this.state = i === 0 ? 'success' : 'secondary'
           },
@@ -350,6 +364,7 @@
             })
 
 						this.savePart()
+            this.computeToPrint()
           },
           saveOutgoing() {
             const isValid = this.$refs.outcomeForm.validate()
@@ -370,6 +385,8 @@
               values: [date, 'Saida', value, description, paymentMethod, employee],
               sheet: 'Entrada/Saida',
             })
+
+            this.computeToPrint()
           },
 					savePart() {
 						if (!this.isNewItem) return
@@ -389,6 +406,7 @@
 						this.brand = ''
 						this.vehicle = ''
             this.employee = ''
+            this.hasToBePrinted = false
             this.resetValidation()
           },
           resetValidation() {
@@ -400,6 +418,21 @@
               this.$refs.outcomeForm.resetValidation()
             }
           },
+          computeToPrint() {
+            if (!this.hasToBePrinted) return
+
+            const description = this.inDescription || this.outDescription
+            const value = this.currencyToFloat(this.value)
+            const paymentMethod = this.paymentMethod
+            const employee = this.employee
+            
+            google.script.run.addToPrint({
+              values: {
+                description, value, employee
+              },
+              sheet: 'IMPRESSAO',
+            })
+          }
         },
         computed: {
           paymentMethodIcon() {
