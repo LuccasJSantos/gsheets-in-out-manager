@@ -169,7 +169,8 @@
           const partsFiltered = partsCodes.filter(partCode => !excludesCodes.includes(partCode))
 
           const rows = partsFiltered.map(partFiltered => {
-            return [partFiltered, this.cod, this.vehicle, this.model, this.year]
+            const tag = `*${partFiltered}*${this.year}*${this.cod}*`
+            return [partFiltered, this.cod, this.vehicle, this.model, this.year, tag]
           })
 
           google.script.run.withSuccessHandler(this.onAddRowSuccess).addRows({

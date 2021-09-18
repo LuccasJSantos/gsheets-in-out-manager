@@ -29,7 +29,7 @@ function addRows(data) {
   const ws = ss.getSheetByName(data.sheet)
 
   const lastRow = ws.getLastRow() + 1
-  const range = ws.getRange(lastRow, 1, data.values.length, 5) // 621
+  const range = ws.getRange(lastRow, 1, data.values.length, 6)
 
   range.setValues(data.values)
 }
