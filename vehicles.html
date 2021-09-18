@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link
+        href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+        rel="stylesheet" />
+  <link
+        href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css"
+        rel="stylesheet" />
+  <link
+        href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css"
+        rel="stylesheet" />
+  <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui" />
+</head>
+
+<body>
+  <style>
+    .text-truncate {
+      width: 100%;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+  </style>
+  <div id="app">
+    <v-app>
+      <v-main>
+        <v-app-bar color="primary" dark>
+          <v-toolbar-title>Adicionar Veículo</v-toolbar-title>
+        </v-app-bar>
+        <v-container>
+          <v-form ref="vehicleForm" class="mt-4">
+            <v-text-field
+                          v-model="cod"
+                          label="Cód. Veículo"
+                          :rules="[v => !!v || 'Insira o código do veículo']"
+                          append-icon="mdi-pound"
+                          outlined
+                          required>
+            </v-text-field>
+            <v-text-field
+                          v-model="vehicle"
+                          label="Veículo"
+                          :rules="[(v) => !!v || 'Insira o nome do veículo']"
+                          append-icon="mdi-car-sports"
+                          outlined
+                          required>
+            </v-text-field>
+            <v-text-field
+                          v-model="model"
+                          label="Modelo"
+                          :rules="[(v) => !!v || 'Insira o modelo do veículo']"
+                          append-icon="mdi-car-sports"
+                          outlined
+                          required>
+            </v-text-field>
+            <v-text-field
+                          v-model="year"
+                          label="Ano"
+                          :rules="[
+                            (v) => !!v || 'Insira o ano do veículo',
+                            (v) => isNaN(Number(v)) ? 'Ano inválido' : true,
+                            (v) => String(v).length !== 4 ? 'Ano inválido' : true,
+                            (v) => Number(v) > new Date().getFullYear() ? 'Ano inválido' : true
+                          ]"
+                          append-icon="mdi-calendar"
+                          outlined
+                          required>
+            </v-text-field>
+            <v-combobox
+                        v-model="excludes"
+                        label="Remover peças"
+                        :items="parts"
+                        :item-text="getPartsText"
+                        :filter="filterParts"
+                        :loading="isPartsLoading"
+                        dense
+                        hide-selected
+                        multiple
+                        outlined
+                        required>
+              <template v-slot:selection="{ item }">
+                <v-chip @click:close="removeExcludePart(item)" class="my-1" close small>
+                  <span class="text-truncate">
+                    {{item.name}}
+                  </span>
+                </v-chip>
+              </template>
+            </v-combobox>
+
+            <v-btn
+                   color="primary"
+                   class="mr-4 mt-4"
+                   @click="saveVehicle"
+                   :loading="isLoading"
+                   block
+                   x-large>
+              Salvar Veículo
+            </v-btn>
+          </v-form>
+        </v-container>
+      </v-main>
+    </v-app>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify({
+        theme: {
+          dark: false,
+          themes: {
+            light: {
+              secondary: 'FF5252',
+              error: '#e06e26',
+            },
+          },
+        },
+      }),
+      created() {
+        this.getPartsFromSheet()
+      },
+      data: () => ({
+        cod: '',
+        excludes: [],
+        model: '',
+        vehicle: '',
+        year: '',
+        isLoading: false,
+        isPartsLoading: true,
+        parts: []
+      }),
+      methods: {
+        onAddRowSuccess() {
+          this.isLoading = false
+          this.resetFields()
+        },
+        getPartsFromSheet() {
+          const onPartsReceived = (parts) => {
+            this.parts = parts.map(([name, cod]) => ({ name, cod }))
+            this.isPartsLoading = false
+          }
+
+          google.script.run
+            .withSuccessHandler(onPartsReceived)
+            .getParts()
+        },
+        getPartsText(part) {
+          return `${part.cod} - ${part.name}`
+        },
+        saveVehicle() {
+          console.log(this.excludes)
+          const isValid = this.$refs.vehicleForm.validate()
+
+          if (!isValid) {
+            return
+          }
+
+          this.isLoading = true
+
+          const partsCodes = this.parts.map(part => part.cod)
+          const excludesCodes = this.excludes.map(exclude => exclude.cod)
+
+          const partsFiltered = partsCodes.filter(partCode => !excludesCodes.includes(partCode))
+
+          const rows = partsFiltered.map(partFiltered => {
+            return [partFiltered, this.cod, this.vehicle, this.model, this.year]
+          })
+
+          google.script.run.withSuccessHandler(this.onAddRowSuccess).addRows({
+            values: rows,
+            sheet: 'Peças | Veículos',
+          })
+        },
+        filterParts({ cod, name }, query) {
+          const text = `${cod} - ${name}`.toLowerCase()
+          return text.includes(String(query).toLowerCase())
+        },
+        removeExcludePart(part) {
+          this.excludes = this.excludes.filter(exclude => exclude.cod !== part.cod)
+        },
+        resetFields() {
+          this.isLoading = false
+          this.isPartsLoading = false
+          this.cod = ''
+          this.excludes = ''
+          this.model = ''
+          this.parts = ''
+          this.vehicle = ''
+          this.year = ''
+
+          this.resetValidation()
+        },
+        resetValidation() {
+          if (this.$refs.vehicleForm) {
+            this.$refs.vehicleForm.resetValidation()
+          }
+        },
+      },
+    })
+  </script>
+</body>
+
+</html>

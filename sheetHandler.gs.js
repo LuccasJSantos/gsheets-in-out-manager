@@ -2,8 +2,19 @@ function getItens() {
   // @ts-ignore
   const ss = SpreadsheetApp.getActiveSpreadsheet()
   const ws = ss.getSheetByName('Itens')
-  
-  return ws.getRange(2, 1, ws.getLastRow() - 1, 3).getValues()
+
+  const range = ws.getRange(2, 1, ws.getLastRow() - 1, 3)
+
+  return range.getValues()
+}
+
+function getParts() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet()
+  const ws = ss.getSheetByName('Peças')
+
+  const range = ws.getRange(2, 1, ws.getLastRow() - 1, 2)
+
+  return range.getValues()
 }
 
 function addRow(data) {
@@ -11,6 +22,16 @@ function addRow(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet()
   const ws = ss.getSheetByName(data.sheet)
   ws.appendRow(data.values)
+}
+
+function addRows(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet()
+  const ws = ss.getSheetByName(data.sheet)
+
+  const lastRow = ws.getLastRow() + 1
+  const range = ws.getRange(lastRow, 1, data.values.length, 5) // 621
+
+  range.setValues(data.values)
 }
 
 function addToPrint(data) {
@@ -31,7 +52,7 @@ function addToPrint(data) {
     const descriptionCell = printRange.getCell(i, 2)
     const valueCell = printRange.getCell(i, 3)
     if (descriptionCell.getValue() !== '') continue
-    
+
     amountCell.setValue(amount)
     descriptionCell.setValue(description)
     valueCell.setValue(value)
