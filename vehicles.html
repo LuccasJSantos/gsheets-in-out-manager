@@ -85,7 +85,7 @@
                         required>
               <template v-slot:selection="{ item }">
                 <v-chip @click:close="removeExcludePart(item)" class="my-1" close small>
-                  <span class="text-truncate">
+                  <span class="text-truncate" :title="item.name">
                     {{item.name}}
                   </span>
                 </v-chip>
